@@ -1,7 +1,7 @@
 import { Container, Graphics } from "../../../pixi/pixi.mjs";
 
-export default class Platform extends Container {
-  type = "platform";
+export default class Box extends Container {
+  type = "box";
 
   constructor() {
     super();
@@ -10,6 +10,7 @@ export default class Platform extends Container {
 
     view.lineStyle(1, 0x00ff00);
     view.drawRect(0, 0, 200, 30);
+    view.lineTo(200, 30);
 
     this.addChild(view);
   }

@@ -26,6 +26,9 @@ export default class Game {
 
     const platformFactory = new PlatformFactory(pixiApp);
 
+    const box = platformFactory.createBox(400, 708);
+    box.isStep = true;
+
     this.platforms = [
       platformFactory.createPlatform(100, 400),
       platformFactory.createPlatform(300, 450),
@@ -33,9 +36,9 @@ export default class Game {
       platformFactory.createPlatform(700, 400),
       platformFactory.createPlatform(900, 450),
       platformFactory.createPlatform(300, 550),
-      platformFactory.createPlatform(0, 738),
-      platformFactory.createPlatform(200, 738),
-      platformFactory.createPlatform(400, 708),
+      platformFactory.createBox(0, 738),
+      platformFactory.createBox(200, 738),
+      box,
     ];
 
     this.setKeys();
@@ -45,7 +48,11 @@ export default class Game {
 
   setKeys() {
     this.keyboardProcessor.getButton("KeyS").executeDown = () => {
-      this.hero.jump();
+      if (this.keyboardProcessor.isButtonPressed("ArrowDown")) {
+        this.hero.throwDown();
+      } else {
+        this.hero.jump();
+      }
     };
 
     this.keyboardProcessor.getButton("ArrowLeft").executeDown = () => {
@@ -84,25 +91,43 @@ export default class Game {
   }
 
   getPlatformCollisionResult(character, platform, prevPoint) {
+    const collisionResult = this.getOrientCollisionResult(
+      character.getRect(),
+      platform,
+      prevPoint
+    );
+
+    if (collisionResult.vertical) {
+      character.y = prevPoint.y;
+    }
+
+    if (collisionResult.horizontal && platform.type === "box") {
+      if (platform.isStep) {
+        this.hero.stay(platform.y);
+      }
+
+      character.x = prevPoint.x;
+    }
+
+    return collisionResult;
+  }
+
+  getOrientCollisionResult(aaRect, bbRect, aaPrevPoint) {
     const collisionResult = {
       horizontal: false,
       vertical: false,
     };
 
-    if (!this.isCheckIntersection(character, platform)) {
+    if (!this.isCheckIntersection(aaRect, bbRect)) {
       return collisionResult;
     }
 
-    const currY = character.y;
-    character.y = prevPoint.y;
+    aaRect.y = aaPrevPoint.y;
 
-    if (!this.isCheckIntersection(character, platform)) {
+    if (!this.isCheckIntersection(aaRect, bbRect)) {
       collisionResult.vertical = true;
       return collisionResult;
     }
-
-    character.y = currY;
-    character.x = prevPoint.x;
 
     collisionResult.horizontal = true;
     return collisionResult;
@@ -114,6 +139,11 @@ export default class Game {
     this.hero.update();
 
     this.platforms.forEach((platform) => {
+      if (this.hero.isJumpState() && platform.type !== "box") {
+        console.log("ssss");
+        return;
+      }
+
       const collisionResult = this.getPlatformCollisionResult(
         this.hero,
         platform,
@@ -121,7 +151,7 @@ export default class Game {
       );
 
       if (collisionResult.vertical) {
-        this.hero.stay();
+        this.hero.stay(platform.y);
       }
     });
   }

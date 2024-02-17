@@ -1,4 +1,5 @@
 import Platform from "./Platform.js";
+import Box from "./Box.js";
 
 export default class PlatformFactory {
   pixiApp;
@@ -15,5 +16,16 @@ export default class PlatformFactory {
     this.pixiApp.stage.addChild(platform);
 
     return platform;
+  }
+
+  createBox(x, y) {
+    const box = new Box();
+
+    box.x = x;
+    box.y = y;
+
+    this.pixiApp.stage.addChild(box);
+
+    return box;
   }
 }

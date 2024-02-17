@@ -24,21 +24,25 @@ export default class KeyboardProcessor {
   onKeyDown(key) {
     const button = this.keyMap[key.code];
 
-    if (button && button.hasOwnProperty("executeDown")) {
-      button.executeDown.call(this.gameContext);
-    }
+    if (button) {
+      if (button.hasOwnProperty("executeDown")) {
+        button.executeDown.call(this.gameContext);
+      }
 
-    button.isDown = true;
+      button.isDown = true;
+    }
   }
 
   onKeyUp(key) {
     const button = this.keyMap[key.code];
 
-    if (button && button.hasOwnProperty("executeUp")) {
-      button.executeUp.call(this.gameContext);
-    }
+    if (button) {
+      if (button && button.hasOwnProperty("executeUp")) {
+        button.executeUp.call(this.gameContext);
+      }
 
-    button.isDown = false;
+      button.isDown = false;
+    }
   }
 
   isButtonPressed(keyName) {
