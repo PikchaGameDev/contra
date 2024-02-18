@@ -1,4 +1,4 @@
-import { Container, Graphics } from "../../../pixi/pixi.mjs";
+import { Container, Graphics } from "../../../libs/pixi.mjs";
 
 export default class Platform extends Container {
   type = "platform";

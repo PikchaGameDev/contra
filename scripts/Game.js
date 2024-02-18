@@ -1,5 +1,5 @@
-import Hero from "./Entities/Hero.js";
-import KeyboardProcessor from "./Entities/KeyboardProcessor.js";
+import Hero from "./Entities/Hero/Hero.js";
+import KeyboardProcessor from "./KeyboardProcessor.js";
 import PlatformFactory from "./Entities/Platforms/PlatformFactory.js";
 
 const LEFT = 37;
@@ -21,8 +21,7 @@ export default class Game {
   constructor(pixiApp) {
     this.pixiApp = pixiApp;
 
-    this.hero = this.createHero(100, 100);
-    this.pixiApp.stage.addChild(this.hero);
+    this.hero = this.createHero(this.pixiApp.stage, 100, 100);
 
     const platformFactory = new PlatformFactory(pixiApp);
 
@@ -48,32 +47,75 @@ export default class Game {
 
   setKeys() {
     this.keyboardProcessor.getButton("KeyS").executeDown = () => {
-      if (this.keyboardProcessor.isButtonPressed("ArrowDown")) {
+      if (
+        this.keyboardProcessor.isButtonPressed("ArrowDown") &&
+        (!this.keyboardProcessor.isButtonPressed("ArrowLeft") ||
+          !this.keyboardProcessor.isButtonPressed("ArrowRight"))
+      ) {
         this.hero.throwDown();
       } else {
         this.hero.jump();
       }
     };
 
-    this.keyboardProcessor.getButton("ArrowLeft").executeDown = () => {
+    const arrowLeft = this.keyboardProcessor.getButton("ArrowLeft");
+    const arrowRight = this.keyboardProcessor.getButton("ArrowRight");
+    const arrowUp = this.keyboardProcessor.getButton("ArrowUp");
+    const arrowDown = this.keyboardProcessor.getButton("ArrowDown");
+
+    arrowLeft.executeDown = () => {
       this.hero.startLeftMove();
+      this.hero.setView(this.getArrowButtonContext());
     };
 
-    this.keyboardProcessor.getButton("ArrowRight").executeDown = () => {
-      this.hero.startRightMove();
-    };
-
-    this.keyboardProcessor.getButton("ArrowLeft").executeUp = () => {
+    arrowLeft.executeUp = () => {
       this.hero.stopLeftMove();
+      this.hero.setView(this.getArrowButtonContext());
     };
 
-    this.keyboardProcessor.getButton("ArrowRight").executeUp = () => {
+    arrowRight.executeDown = () => {
+      this.hero.startRightMove();
+      this.hero.setView(this.getArrowButtonContext());
+    };
+
+    arrowRight.executeUp = () => {
       this.hero.stopRightMove();
+      this.hero.setView(this.getArrowButtonContext());
+    };
+
+    arrowUp.executeDown = () => {
+      this.hero.setView(this.getArrowButtonContext());
+    };
+
+    arrowUp.executeUp = () => {
+      this.hero.setView(this.getArrowButtonContext());
+    };
+
+    arrowDown.executeDown = () => {
+      this.hero.setView(this.getArrowButtonContext());
+    };
+
+    arrowDown.executeUp = () => {
+      this.hero.setView(this.getArrowButtonContext());
     };
   }
 
-  createHero(x, y) {
-    const hero = new Hero();
+  getArrowButtonContext() {
+    const buttonContext = {};
+
+    buttonContext.arrowLeft =
+      this.keyboardProcessor.isButtonPressed("ArrowLeft");
+    buttonContext.arrowRight =
+      this.keyboardProcessor.isButtonPressed("ArrowRight");
+    buttonContext.arrowUp = this.keyboardProcessor.isButtonPressed("ArrowUp");
+    buttonContext.arrowDown =
+      this.keyboardProcessor.isButtonPressed("ArrowDown");
+
+    return buttonContext;
+  }
+
+  createHero(stage, x, y) {
+    const hero = new Hero(stage);
 
     hero.x = x;
     hero.y = y;
@@ -92,7 +134,7 @@ export default class Game {
 
   getPlatformCollisionResult(character, platform, prevPoint) {
     const collisionResult = this.getOrientCollisionResult(
-      character.getRect(),
+      character.collisionBox,
       platform,
       prevPoint
     );
@@ -140,7 +182,6 @@ export default class Game {
 
     this.platforms.forEach((platform) => {
       if (this.hero.isJumpState() && platform.type !== "box") {
-        console.log("ssss");
         return;
       }
 
