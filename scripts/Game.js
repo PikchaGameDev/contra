@@ -1,6 +1,8 @@
 import Hero from "./Entities/Hero/Hero.js";
 import KeyboardProcessor from "./KeyboardProcessor.js";
 import PlatformFactory from "./Entities/Platforms/PlatformFactory.js";
+import Camera from "./Camera.js";
+import { Container } from "../libs/pixi.mjs";
 
 const LEFT = 37;
 const RIGHT = 39;
@@ -16,24 +18,29 @@ export default class Game {
   hero = null;
   platforms = [];
 
+  camera;
+
   keyboardProcessor = new KeyboardProcessor(this);
 
   constructor(pixiApp) {
     this.pixiApp = pixiApp;
 
-    this.hero = this.createHero(this.pixiApp.stage, 100, 100);
+    const worldContainer = new Container({ width: 1024, height: 768 });
+    this.pixiApp.stage.addChild(worldContainer);
 
-    const platformFactory = new PlatformFactory(pixiApp);
+    this.hero = this.createHero(worldContainer, 100, 100);
+
+    const platformFactory = new PlatformFactory(worldContainer);
 
     const box = platformFactory.createBox(400, 708);
     box.isStep = true;
 
     this.platforms = [
       platformFactory.createPlatform(100, 400),
-      platformFactory.createPlatform(300, 450),
+      platformFactory.createPlatform(300, 400),
       platformFactory.createPlatform(500, 400),
       platformFactory.createPlatform(700, 400),
-      platformFactory.createPlatform(900, 450),
+      platformFactory.createPlatform(1100, 400),
       platformFactory.createPlatform(300, 550),
       platformFactory.createBox(0, 738),
       platformFactory.createBox(200, 738),
@@ -42,7 +49,19 @@ export default class Game {
 
     this.setKeys();
 
+    console.log(worldContainer.width);
+
+    const cameraSettings = {
+      target: this.hero,
+      world: worldContainer,
+      screenSize: this.pixiApp.screen,
+      maxWorldWidth: worldContainer.width,
+      isBackScrollX: true,
+    };
+
     this.render();
+
+    this.camera = new Camera(cameraSettings);
   }
 
   setKeys() {
@@ -195,6 +214,8 @@ export default class Game {
         this.hero.stay(platform.y);
       }
     });
+
+    this.camera.update();
   }
 
   render() {
