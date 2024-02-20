@@ -12,7 +12,6 @@ export default class Camera {
     this.isBackScrollX = cameraSettings.isBackScrollX;
 
     this.centerScreenPointX = cameraSettings.screenSize.width / 2;
-    console.log(this.world.width, this.centerScreenPointX);
     this.rightBorderWorldPointX = this.world.width - this.centerScreenPointX;
   }
 

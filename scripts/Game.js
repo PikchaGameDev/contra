@@ -3,6 +3,7 @@ import KeyboardProcessor from "./KeyboardProcessor.js";
 import PlatformFactory from "./Entities/Platforms/PlatformFactory.js";
 import Camera from "./Camera.js";
 import { Container } from "../libs/pixi.mjs";
+import BulletFactory from "./Entities/Bullets/BulletFactory.js";
 
 const LEFT = 37;
 const RIGHT = 39;
@@ -19,18 +20,21 @@ export default class Game {
   platforms = [];
 
   camera;
+  bulletFactory;
+  bullets = [];
+  worldContainer;
 
   keyboardProcessor = new KeyboardProcessor(this);
 
   constructor(pixiApp) {
     this.pixiApp = pixiApp;
 
-    const worldContainer = new Container({ width: 1024, height: 768 });
-    this.pixiApp.stage.addChild(worldContainer);
+    this.worldContainer = new Container();
+    this.pixiApp.stage.addChild(this.worldContainer);
 
-    this.hero = this.createHero(worldContainer, 100, 100);
+    this.hero = this.createHero(this.worldContainer, 100, 100);
 
-    const platformFactory = new PlatformFactory(worldContainer);
+    const platformFactory = new PlatformFactory(this.worldContainer);
 
     const box = platformFactory.createBox(400, 708);
     box.isStep = true;
@@ -49,22 +53,28 @@ export default class Game {
 
     this.setKeys();
 
-    console.log(worldContainer.width);
-
     const cameraSettings = {
       target: this.hero,
-      world: worldContainer,
+      world: this.worldContainer,
       screenSize: this.pixiApp.screen,
-      maxWorldWidth: worldContainer.width,
+      maxWorldWidth: this.worldContainer.width,
       isBackScrollX: true,
     };
 
     this.render();
 
     this.camera = new Camera(cameraSettings);
+    this.bulletFactory = new BulletFactory();
   }
 
   setKeys() {
+    this.keyboardProcessor.getButton("KeyA").executeDown = () => {
+      const bullet = this.bulletFactory.createBullet(this.hero.bulletContext);
+
+      this.worldContainer.addChild(bullet);
+
+      this.bullets.push(bullet);
+    };
     this.keyboardProcessor.getButton("KeyS").executeDown = () => {
       if (
         this.keyboardProcessor.isButtonPressed("ArrowDown") &&
@@ -216,6 +226,27 @@ export default class Game {
     });
 
     this.camera.update();
+
+    this.bullets.forEach((bullet, i) => {
+      bullet.update();
+
+      this.checkBulletPosition(bullet, i);
+    });
+  }
+
+  checkBulletPosition(bullet, index) {
+    if (
+      bullet.x > this.pixiApp.screen.width - this.worldContainer.x ||
+      bullet.x < -this.worldContainer.x ||
+      bullet.y > this.pixiApp.screen.height ||
+      bullet.y < 0
+    ) {
+      if (bullet.parent !== null) {
+        bullet.removeFromParent();
+      }
+
+      this.bullets.slice(index, 1);
+    }
   }
 
   render() {
