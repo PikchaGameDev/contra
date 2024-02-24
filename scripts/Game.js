@@ -4,6 +4,7 @@ import PlatformFactory from "./Entities/Platforms/PlatformFactory.js";
 import Camera from "./Camera.js";
 import { Container } from "../libs/pixi.mjs";
 import BulletFactory from "./Entities/Bullets/BulletFactory.js";
+import RunnerFactory from "./Entities/Enemies/Runner/RunnerFactory.js";
 
 const LEFT = 37;
 const RIGHT = 39;
@@ -20,8 +21,13 @@ export default class Game {
   platforms = [];
 
   camera;
+
+  runnerFactory;
   bulletFactory;
+
   bullets = [];
+  enemies = [];
+
   worldContainer;
 
   keyboardProcessor = new KeyboardProcessor(this);
@@ -41,7 +47,7 @@ export default class Game {
 
     this.platforms = [
       platformFactory.createPlatform(100, 400),
-      platformFactory.createPlatform(300, 400),
+      //platformFactory.createPlatform(300, 400),
       platformFactory.createPlatform(500, 400),
       platformFactory.createPlatform(700, 400),
       platformFactory.createPlatform(1100, 400),
@@ -65,6 +71,53 @@ export default class Game {
 
     this.camera = new Camera(cameraSettings);
     this.bulletFactory = new BulletFactory();
+    this.runnerFactory = new RunnerFactory(this.worldContainer);
+    this.enemies = [this.runnerFactory.create(800, 150)];
+  }
+
+  update() {
+    this.hero.update();
+
+    this.enemies.forEach((enemy, i) => {
+      enemy.update();
+
+      let isDead = false;
+
+      this.bullets.forEach((bullet, i) => {
+        if (this.isCheckIntersection(bullet, enemy.collisionBox)) {
+          isDead = true;
+          bullet.isDead = true;
+
+          return;
+        }
+      });
+
+      this.checkEnemy(enemy, i, isDead);
+    });
+
+    this.platforms.forEach((platform) => {
+      if (this.hero.isJumpState() && platform.type !== "box") {
+        return;
+      }
+
+      this.checkPlatformCollision(this.hero, platform);
+
+      this.enemies.forEach((enemy) => {
+        if (enemy.isJumpState() && platform.type !== "box") {
+          return;
+        }
+
+        this.checkPlatformCollision(enemy, platform);
+      });
+    });
+
+    this.camera.update();
+
+    this.bullets.forEach((bullet, i) => {
+      bullet.update();
+
+      this.checkBulletPosition(bullet, i);
+    });
   }
 
   setKeys() {
@@ -161,7 +214,8 @@ export default class Game {
     );
   }
 
-  getPlatformCollisionResult(character, platform, prevPoint) {
+  checkPlatformCollision(character, platform) {
+    const prevPoint = character.prevPoint;
     const collisionResult = this.getOrientCollisionResult(
       character.collisionBox,
       platform,
@@ -170,17 +224,16 @@ export default class Game {
 
     if (collisionResult.vertical) {
       character.y = prevPoint.y;
+      character.stay(platform.y);
     }
 
     if (collisionResult.horizontal && platform.type === "box") {
       if (platform.isStep) {
-        this.hero.stay(platform.y);
+        character.stay(platform.y);
+      } else {
+        character.x = prevPoint.x;
       }
-
-      character.x = prevPoint.x;
     }
-
-    return collisionResult;
   }
 
   getOrientCollisionResult(aaRect, bbRect, aaPrevPoint) {
@@ -204,38 +257,9 @@ export default class Game {
     return collisionResult;
   }
 
-  update() {
-    const prevPoint = { x: this.hero.x, y: this.hero.y };
-
-    this.hero.update();
-
-    this.platforms.forEach((platform) => {
-      if (this.hero.isJumpState() && platform.type !== "box") {
-        return;
-      }
-
-      const collisionResult = this.getPlatformCollisionResult(
-        this.hero,
-        platform,
-        prevPoint
-      );
-
-      if (collisionResult.vertical) {
-        this.hero.stay(platform.y);
-      }
-    });
-
-    this.camera.update();
-
-    this.bullets.forEach((bullet, i) => {
-      bullet.update();
-
-      this.checkBulletPosition(bullet, i);
-    });
-  }
-
   checkBulletPosition(bullet, index) {
     if (
+      bullet.isDead ||
       bullet.x > this.pixiApp.screen.width - this.worldContainer.x ||
       bullet.x < -this.worldContainer.x ||
       bullet.y > this.pixiApp.screen.height ||
@@ -246,6 +270,20 @@ export default class Game {
       }
 
       this.bullets.slice(index, 1);
+    }
+  }
+
+  checkEnemy(enemy, index, isDead) {
+    if (
+      isDead ||
+      enemy.x > this.pixiApp.screen.width - this.worldContainer.x ||
+      enemy.x < -this.worldContainer.x ||
+      enemy.y > this.pixiApp.screen.height ||
+      enemy.y < 0
+    ) {
+      enemy.removeFromParent();
+
+      this.enemies.slice(index, 1);
     }
   }
 

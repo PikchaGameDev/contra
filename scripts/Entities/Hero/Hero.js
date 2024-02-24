@@ -1,4 +1,5 @@
 import HeroView from "./HeroView.js";
+import HeroWeaponUnit from "./HeroWeaponUnit.js";
 
 const States = {
   stay: "stay",
@@ -31,39 +32,24 @@ export default class Hero {
   isLay;
   isUp;
 
-  #bulletContext = {
-    x: 0,
-    y: 0,
-    angle: 0,
-  };
+  #prevPoint = { x: 0, y: 0 };
 
-  bulletAngle;
+  heroWeaponUnit;
 
   constructor(stage) {
     this.view = new HeroView();
     stage.addChild(this.view);
 
+    this.heroWeaponUnit = new HeroWeaponUnit(this.view);
+
     this.state = States.jump;
     this.view.showStay();
   }
 
-  get x() {
-    return this.view.x;
-  }
-
-  set x(x) {
-    this.view.x = x;
-  }
-
-  get y() {
-    return this.view.y;
-  }
-
-  set y(y) {
-    this.view.y = y;
-  }
-
   update() {
+    this.#prevPoint.x = this.x;
+    this.#prevPoint.y = this.y;
+
     this.velocityX = this.movement.x * this.SPEED;
     this.x += this.velocityX;
 
@@ -149,9 +135,9 @@ export default class Hero {
     this.isLay = buttonContext.arrowDown;
     this.isUp = buttonContext.arrowUp;
 
-    this.setBulletAngle(buttonContext);
+    this.heroWeaponUnit.setBulletAngle(buttonContext, this.isJumpState());
 
-    if (this.state === States.jump || this.state === States.flyDown) {
+    if (this.isJumpState() || this.state === States.flyDown) {
       return;
     }
 
@@ -174,33 +160,28 @@ export default class Hero {
     }
   }
 
-  setBulletAngle(buttonContext) {
-    if (buttonContext.arrowLeft || buttonContext.arrowRight) {
-      if (buttonContext.arrowUp) {
-        this.bulletAngle = -45;
-      } else if (buttonContext.arrowDown) {
-        this.bulletAngle = 45;
-      } else {
-        this.bulletAngle = 0;
-      }
-    } else {
-      if (buttonContext.arrowUp) {
-        this.bulletAngle = -90;
-      } else if (buttonContext.arrowDown && this.state === States.jump) {
-        this.bulletAngle = 90;
-      } else {
-        this.bulletAngle = 0;
-      }
-    }
+  get x() {
+    return this.view.x;
+  }
+
+  set x(x) {
+    this.view.x = x;
+  }
+
+  get y() {
+    return this.view.y;
+  }
+
+  set y(y) {
+    this.view.y = y;
+  }
+
+  get prevPoint() {
+    return this.#prevPoint;
   }
 
   get bulletContext() {
-    this.#bulletContext.x = this.x + this.view.bulletPointShift.x;
-    this.#bulletContext.y = this.y + this.view.bulletPointShift.y;
-    this.#bulletContext.angle = this.view.isFlipped
-      ? this.bulletAngle * -1 + 180
-      : this.bulletAngle;
-    return this.#bulletContext;
+    return this.heroWeaponUnit.bulletContext;
   }
 
   get collisionBox() {

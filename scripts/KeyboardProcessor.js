@@ -27,9 +27,7 @@ export default class KeyboardProcessor {
     if (button) {
       button.isDown = true;
 
-      if (button.hasOwnProperty("executeDown")) {
-        button.executeDown.call(this.gameContext);
-      }
+      button.executeDown?.call(this.gameContext);
     }
   }
 
@@ -39,13 +37,11 @@ export default class KeyboardProcessor {
     if (button) {
       button.isDown = false;
 
-      if (button && button.hasOwnProperty("executeUp")) {
-        button.executeUp.call(this.gameContext);
-      }
+      button && button.executeUp?.call(this.gameContext);
     }
   }
 
   isButtonPressed(keyName) {
-    return this.keyMap[keyName].isDown;
+    return this.keyMap[keyName]?.isDown;
   }
 }

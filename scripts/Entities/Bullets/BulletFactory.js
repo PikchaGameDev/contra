@@ -4,7 +4,7 @@ export default class BulletFactory {
   constructor() {}
 
   createBullet(bulletContext) {
-    const bullet = new Bullet((bulletContext.angle * Math.PI) / 180);
+    const bullet = new Bullet(bulletContext.angle);
 
     bullet.x = bulletContext.x;
     bullet.y = bulletContext.y;
