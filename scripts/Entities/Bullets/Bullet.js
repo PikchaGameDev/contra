@@ -1,22 +1,16 @@
-import { Container, Graphics } from "../../../libs/pixi.mjs";
+import Entity from "../Entity.js";
 
-export default class Bullet extends Container {
+export default class Bullet extends Entity {
   SPEED = 10;
 
   angle;
-  isDead;
 
-  constructor(angle) {
-    super();
+  type;
+
+  constructor(view, angle) {
+    super(view);
 
     this.angle = (angle * Math.PI) / 180;
-
-    const view = new Graphics();
-
-    view.lineStyle(1, 0xffff00);
-    view.drawRect(0, 0, 5, 5);
-
-    this.addChild(view);
   }
 
   update() {

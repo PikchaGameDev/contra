@@ -5,6 +5,8 @@ import Camera from "./Camera.js";
 import { Container } from "../libs/pixi.mjs";
 import BulletFactory from "./Entities/Bullets/BulletFactory.js";
 import RunnerFactory from "./Entities/Enemies/Runner/RunnerFactory.js";
+import HeroFactory from "./Entities/Hero/HeroFactory.js";
+import Physics from "./Physics.js";
 
 const LEFT = 37;
 const RIGHT = 39;
@@ -18,15 +20,16 @@ export default class Game {
   pixiApp = null;
 
   hero = null;
-  platforms = [];
 
   camera;
 
   runnerFactory;
   bulletFactory;
+  heroFactory;
 
-  bullets = [];
-  enemies = [];
+  platforms = [];
+
+  entities = [];
 
   worldContainer;
 
@@ -38,7 +41,11 @@ export default class Game {
     this.worldContainer = new Container();
     this.pixiApp.stage.addChild(this.worldContainer);
 
-    this.hero = this.createHero(this.worldContainer, 100, 100);
+    this.heroFactory = new HeroFactory(this.worldContainer);
+
+    this.hero = this.heroFactory.create(100, 100);
+
+    this.entities = [this.hero];
 
     const platformFactory = new PlatformFactory(this.worldContainer);
 
@@ -47,7 +54,6 @@ export default class Game {
 
     this.platforms = [
       platformFactory.createPlatform(100, 400),
-      //platformFactory.createPlatform(300, 400),
       platformFactory.createPlatform(500, 400),
       platformFactory.createPlatform(700, 400),
       platformFactory.createPlatform(1100, 400),
@@ -70,63 +76,66 @@ export default class Game {
     this.render();
 
     this.camera = new Camera(cameraSettings);
-    this.bulletFactory = new BulletFactory();
+    this.bulletFactory = new BulletFactory(this.worldContainer, this.entities);
     this.runnerFactory = new RunnerFactory(this.worldContainer);
-    this.enemies = [this.runnerFactory.create(800, 150)];
+    this.entities.push(this.runnerFactory.create(800, 150));
   }
 
   update() {
-    this.hero.update();
+    this.entities.forEach((entity, i) => {
+      entity.update();
 
-    this.enemies.forEach((enemy, i) => {
-      enemy.update();
-
-      let isDead = false;
-
-      this.bullets.forEach((bullet, i) => {
-        if (this.isCheckIntersection(bullet, enemy.collisionBox)) {
-          isDead = true;
-          bullet.isDead = true;
-
-          return;
-        }
-      });
-
-      this.checkEnemy(enemy, i, isDead);
-    });
-
-    this.platforms.forEach((platform) => {
-      if (this.hero.isJumpState() && platform.type !== "box") {
-        return;
+      if (entity.type === "hero" || entity.type === "characterEnemy") {
+        this.checkDamage(entity);
+        this.checkPlatforms(entity);
       }
 
-      this.checkPlatformCollision(this.hero, platform);
-
-      this.enemies.forEach((enemy) => {
-        if (enemy.isJumpState() && platform.type !== "box") {
-          return;
-        }
-
-        this.checkPlatformCollision(enemy, platform);
-      });
+      this.checkEntityStatus(entity, i);
     });
 
     this.camera.update();
+  }
 
-    this.bullets.forEach((bullet, i) => {
-      bullet.update();
+  checkDamage(entity) {
+    const damagers = this.entities.filter(
+      (damager) =>
+        (entity.type === "characterEnemy" && damager.type === "heroBullet") ||
+        (entity.type === "hero" &&
+          (damager.type === "enemyBullet" || damager.type === "characterEnemy"))
+    );
 
-      this.checkBulletPosition(bullet, i);
+    for (let damager of damagers) {
+      if (
+        Physics.isCheckIntersection(damager.collisionBox, entity.collisionBox)
+      ) {
+        entity.dead();
+
+        if (damager.type !== "characterEnemy") {
+          damager.dead();
+        }
+
+        break;
+      }
+    }
+  }
+
+  checkPlatforms(character) {
+    if (character.isDead) {
+      return;
+    }
+
+    this.platforms.forEach((platform) => {
+      if (character.isJumpState() && platform.type !== "box") {
+        return;
+      }
+
+      this.checkPlatformCollision(character, platform);
     });
   }
 
   setKeys() {
     this.keyboardProcessor.getButton("KeyA").executeDown = () => {
-      const bullet = this.bulletFactory.createBullet(this.hero.bulletContext);
-
-      this.worldContainer.addChild(bullet);
-
-      this.bullets.push(bullet);
+      this.bulletFactory.createBullet(this.hero.bulletContext);
     };
     this.keyboardProcessor.getButton("KeyS").executeDown = () => {
       if (
@@ -205,18 +214,9 @@ export default class Game {
     return hero;
   }
 
-  isCheckIntersection(entity, area) {
-    return (
-      entity.x < area.x + area.width &&
-      entity.x + entity.width > area.x &&
-      entity.y < area.y + area.height &&
-      entity.y + entity.height > area.y
-    );
-  }
-
   checkPlatformCollision(character, platform) {
     const prevPoint = character.prevPoint;
-    const collisionResult = this.getOrientCollisionResult(
+    const collisionResult = Physics.getOrientCollisionResult(
       character.collisionBox,
       platform,
       prevPoint
@@ -236,55 +236,20 @@ export default class Game {
     }
   }
 
-  getOrientCollisionResult(aaRect, bbRect, aaPrevPoint) {
-    const collisionResult = {
-      horizontal: false,
-      vertical: false,
-    };
-
-    if (!this.isCheckIntersection(aaRect, bbRect)) {
-      return collisionResult;
-    }
-
-    aaRect.y = aaPrevPoint.y;
-
-    if (!this.isCheckIntersection(aaRect, bbRect)) {
-      collisionResult.vertical = true;
-      return collisionResult;
-    }
-
-    collisionResult.horizontal = true;
-    return collisionResult;
-  }
-
-  checkBulletPosition(bullet, index) {
-    if (
-      bullet.isDead ||
-      bullet.x > this.pixiApp.screen.width - this.worldContainer.x ||
-      bullet.x < -this.worldContainer.x ||
-      bullet.y > this.pixiApp.screen.height ||
-      bullet.y < 0
-    ) {
-      if (bullet.parent !== null) {
-        bullet.removeFromParent();
-      }
-
-      this.bullets.slice(index, 1);
+  checkEntityStatus(entity, index) {
+    if (entity.isDead || this.isScreenOut(entity)) {
+      entity.removeFromStage();
+      this.entities.splice(index, 1);
     }
   }
 
-  checkEnemy(enemy, index, isDead) {
-    if (
-      isDead ||
-      enemy.x > this.pixiApp.screen.width - this.worldContainer.x ||
-      enemy.x < -this.worldContainer.x ||
-      enemy.y > this.pixiApp.screen.height ||
-      enemy.y < 0
-    ) {
-      enemy.removeFromParent();
-
-      this.enemies.slice(index, 1);
-    }
+  isScreenOut(entity) {
+    return (
+      entity.x > this.pixiApp.screen.width - this.worldContainer.x ||
+      entity.x < -this.worldContainer.x ||
+      entity.y > this.pixiApp.screen.height ||
+      entity.y < 0
+    );
   }
 
   render() {

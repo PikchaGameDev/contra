@@ -6,7 +6,7 @@ export default class RunnerView extends Container {
     height: 0,
   };
 
-  collisionBox = {
+  #collisionBox = {
     x: 0,
     y: 0,
     width: 0,
@@ -31,8 +31,8 @@ export default class RunnerView extends Container {
     this.bounds.width = 20;
     this.bounds.height = 90;
 
-    this.collisionBox.width = this.bounds.width;
-    this.collisionBox.height = this.bounds.height;
+    this.#collisionBox.width = this.bounds.width;
+    this.#collisionBox.height = this.bounds.height;
 
     this.stm.states.run = this.getRunImage();
     this.stm.states.jump = this.getJumpImage();
@@ -122,10 +122,10 @@ export default class RunnerView extends Container {
     return this.rootNode.scale.x === -1;
   }
 
-  getCollisionBox() {
-    this.collisionBox.x = this.x;
-    this.collisionBox.y = this.y;
+  get collisionBox() {
+    this.#collisionBox.x = this.x;
+    this.#collisionBox.y = this.y;
 
-    return this.collisionBox;
+    return this.#collisionBox;
   }
 }

@@ -1,4 +1,5 @@
 import Runner from "./Runner.js";
+import RunnerView from "./RunnerView.js";
 
 export default class RunnerFactory {
   worldContainer;
@@ -8,7 +9,10 @@ export default class RunnerFactory {
   }
 
   create(x, y) {
-    const runner = new Runner(this.worldContainer);
+    const runnerView = new RunnerView();
+    this.worldContainer.addChild(runnerView);
+
+    const runner = new Runner(runnerView);
 
     runner.x = x;
     runner.y = y;

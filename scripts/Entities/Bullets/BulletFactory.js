@@ -1,14 +1,25 @@
 import Bullet from "./Bullet.js";
+import BulletView from "./BulletView.js";
 
 export default class BulletFactory {
-  constructor() {}
+  worldContainer;
+  entities;
+
+  constructor(worldContainer, entities) {
+    this.worldContainer = worldContainer;
+    this.entities = entities;
+  }
 
   createBullet(bulletContext) {
-    const bullet = new Bullet(bulletContext.angle);
+    const view = new BulletView();
+    this.worldContainer.addChild(view);
+
+    const bullet = new Bullet(view, bulletContext.angle);
 
     bullet.x = bulletContext.x;
     bullet.y = bulletContext.y;
+    bullet.type = bulletContext.type;
 
-    return bullet;
+    this.entities.push(bullet);
   }
 }

@@ -6,7 +6,7 @@ export default class HeroView extends Container {
     height: 0,
   };
 
-  collisionBox = {
+  #collisionBox = {
     x: 0,
     y: 0,
     width: 0,
@@ -36,8 +36,8 @@ export default class HeroView extends Container {
     this.bounds.width = 20;
     this.bounds.height = 90;
 
-    this.collisionBox.width = this.bounds.width;
-    this.collisionBox.height = this.bounds.height;
+    this.#collisionBox.width = this.bounds.width;
+    this.#collisionBox.height = this.bounds.height;
 
     this.stm.states.stay = this.getStayImage();
     this.stm.states.stayUp = this.getStayUpImage();
@@ -55,11 +55,11 @@ export default class HeroView extends Container {
     this.addChild(this.rootNode);
   }
 
-  getCollisionBox() {
-    this.collisionBox.x = this.x;
-    this.collisionBox.y = this.y;
+  get collisionBox() {
+    this.#collisionBox.x = this.x;
+    this.#collisionBox.y = this.y;
 
-    return this.collisionBox;
+    return this.#collisionBox;
   }
 
   setBulletPointShift(x, y) {
