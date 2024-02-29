@@ -7,6 +7,7 @@ import BulletFactory from "./Entities/Bullets/BulletFactory.js";
 import RunnerFactory from "./Entities/Enemies/Runner/RunnerFactory.js";
 import HeroFactory from "./Entities/Hero/HeroFactory.js";
 import Physics from "./Physics.js";
+import TourelleFactory from "./Entities/Enemies/Tourelle/TourelleFactory.js";
 
 const LEFT = 37;
 const RIGHT = 39;
@@ -79,6 +80,13 @@ export default class Game {
     this.bulletFactory = new BulletFactory(this.worldContainer, this.entities);
     this.runnerFactory = new RunnerFactory(this.worldContainer);
     this.entities.push(this.runnerFactory.create(800, 150));
+
+    const tourelleFactory = new TourelleFactory(
+      this.worldContainer,
+      this.hero,
+      this.bulletFactory
+    );
+    this.entities.push(tourelleFactory.create(500, 200));
   }
 
   update() {
